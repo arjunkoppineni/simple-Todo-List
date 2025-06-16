@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - yum install -y jq maven
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - ACCOUNT_ID=216989142685
+      - REGION=us-east-1
+      - REPO_NAME=harish
+      - IMAGE_TAG=todo
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo Building the JAR file...
+      - mvn clean install
+      - echo Building the Docker image...
+      - docker build -t $REPO_NAME .
+      - docker tag $REPO_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Pushing Docker image to Amazon ECR...
+      - docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}
+      - echo Creating final deployment files...
+      - mkdir -p k8s-out
+      - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}|g" k8s/deployment.yaml > k8s-out/deployment.yaml
+      - cp k8s/service.yaml k8s-out/service.yaml
+      - ls -R
+
+artifacts:
+  base-directory: k8s-out
+  files:
+    - deployment.yaml
+    - service.yaml
