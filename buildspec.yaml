@@ -18,7 +18,7 @@ phases:
       - echo Building the JAR file...
       - mvn clean install
       - echo Building the Docker image...
-      - docker build -t $REPO_NAME .
+      - docker build -t $REPO_NAME:$IMAGE_TAG .
       - docker tag $REPO_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
 
   post_build:
